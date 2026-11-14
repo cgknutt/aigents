@@ -248,6 +248,17 @@ export function createAigent(opts: AigentOptions): Aigent {
       }
       show(!!h);
     }
+    // heading home, and home is gone (the page changed under it): it fades out quietly instead of flying to where
+    // home used to be
+    else if (F.homing && !homePt()) {
+      show(false);
+      F.target = null;
+      if (F.arrive) {
+        const done = F.arrive;
+        F.arrive = null;
+        done();
+      }
+    }
     // out: carried by the current toward where it's going
     else if (F.target && shown) {
       if (still()) {
