@@ -1,4 +1,4 @@
-import { BODY_NAMES, createAigent, filmGrain, mountMark, type BodyName } from "../src";
+import { BODY_NAMES, createAigent, filmGrain, mountMark, seventies, type BodyName } from "../src";
 const $ = (s: string) => document.querySelector<HTMLElement>(s)!;
 const COLORS = ["#b0623f", "#3f8c88", "#4f86b8", "#8a5a8c", "#c49a3a"];
 let ci = 0, body: BodyName = (new URLSearchParams(location.search).get("body") as BodyName) || "mae", still = false, thinking = false;
@@ -27,14 +27,27 @@ $("#color").onclick = () => { ci = (ci + 1) % COLORS.length; document.documentEl
 const q = new URLSearchParams(location.search);
 let film = q.has("film"), bgrain = q.has("bgrain"), unGrain: (() => void) | null = null;
 const filmMark = () => {
-  a.set({ fps: film ? 24 : undefined, shutter: film, grain: bgrain ? 0.35 : 0 });
+  a.set({ fps: film ? 24 : undefined, shutter: film ? 0.75 : false, grain: bgrain ? 0.85 : 0 });
   $("#film").setAttribute("aria-pressed", String(film));
   $("#bgrain").setAttribute("aria-pressed", String(bgrain));
   $("#pgrain").setAttribute("aria-pressed", String(!!unGrain));
 };
 $("#film").onclick = () => { film = !film; filmMark(); };
 $("#bgrain").onclick = () => { bgrain = !bgrain; filmMark(); };
-$("#pgrain").onclick = () => { if (unGrain) { unGrain(); unGrain = null; } else unGrain = filmGrain(); filmMark(); };
-if (q.has("pgrain")) unGrain = filmGrain();
+$("#pgrain").onclick = () => { if (unGrain) { unGrain(); unGrain = null; } else unGrain = filmGrain({ strength: 0.12 }); filmMark(); };
+if (q.has("pgrain")) unGrain = filmGrain({ strength: 0.12 });
+// the whole 70s package: the page look, plus film speed, the shutter, and grain in the light
+let un70: (() => void) | null = null;
+const set70 = (on: boolean) => {
+  un70?.();
+  un70 = on ? seventies() : null;
+  film = on || film;
+  bgrain = on || bgrain;
+  if (!on) film = bgrain = false;
+  $("#seventies").setAttribute("aria-pressed", String(on));
+  filmMark();
+};
+$("#seventies").onclick = () => set70(!un70);
+if (q.has("seventies")) set70(true);
 filmMark();
 Object.assign(window, { aigent: a });

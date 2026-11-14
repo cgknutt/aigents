@@ -33,8 +33,9 @@ export type AigentOptions = {
   /** a film look (debo, 2026-11-14): draw this many frames a second while it moves, like film's 24. the physics
    *  still runs every frame, so only the look changes. leave it out for the screen's own rate */
   fps?: number;
-  /** a film shutter: each frame leaves a fading ghost of the last, so a moving body blurs along its way */
-  shutter?: boolean;
+  /** a film shutter: each frame leaves a fading ghost of the last, so a moving body blurs along its way. true, or
+   *  how long the ghost lasts, 0 to 0.9 (true is 0.7) */
+  shutter?: boolean | number;
   /** film grain in the body's light, 0 to 1 (about 0.3 reads as film) */
   grain?: number;
 };
@@ -86,7 +87,7 @@ export function grainCanvas() {
   for (let i = 0; i < img.data.length; i += 4) {
     const v = Math.random() < 0.5 ? 0 : 255;
     img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
-    img.data[i + 3] = Math.random() * 140;
+    img.data[i + 3] = Math.random() < 0.55 ? 0 : 90 + Math.random() * 165;
   }
   g.putImageData(img, 0, 0);
   return (grainTile = c);
@@ -290,7 +291,8 @@ export function createAigent(opts: AigentOptions): Aigent {
     if (o.shutter && !small && !still() && ghost > 0) {
       ctx.save();
       ctx.globalCompositeOperation = "destination-out";
-      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      const keep = o.shutter === true ? 0.7 : Math.max(0, Math.min(0.9, Number(o.shutter)));
+      ctx.fillStyle = `rgba(0,0,0,${(1 - keep).toFixed(2)})`;
       ctx.fillRect(0, 0, W, H);
       ctx.restore();
       ghost--;
@@ -305,13 +307,15 @@ export function createAigent(opts: AigentOptions): Aigent {
       dt, f, t: (performance.now() - t0) / 1000, look, still: still(), W, H,
     };
     drew = body.draw(ctx, k);
-    if (drew) ghost = 10;
+    if (drew) ghost = 24;
     // film grain, only in its light: noise laid over what's drawn (source-atop), shifted every frame like film stock
     if (drew && o.grain) {
       const R = 170 * Math.max(0.6, k.scale);
       ctx.save();
       ctx.globalCompositeOperation = "source-atop";
       ctx.globalAlpha = Math.min(1, o.grain);
+      // twice over: once darkening, once lightening, so the specks show on a glow of any color
+      ctx.globalCompositeOperation = "source-atop";
       const g = grainPattern(ctx);
       g?.setTransform(new DOMMatrix().translate(Math.random() * 128, Math.random() * 128));
       if (g) ctx.fillStyle = g;
