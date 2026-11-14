@@ -27,6 +27,9 @@ export type AigentOptions = {
   /** its size when it's out. default 0.72 */
   flyScale?: number;
   zIndex?: number;
+  /** ride along with something the page moves itself (d{ai}sy's mae engine): where it is each frame, and how big
+   *  (1 = 44px). null hides it. while this is set, home and flights are the page's business. */
+  follow?: () => { x: number; y: number; scale: number } | null;
 };
 
 export type Aigent = {
@@ -40,6 +43,8 @@ export type Aigent = {
   done(): Promise<void>;
   hop(): void;
   set(o: Partial<Omit<AigentOptions, "zIndex">>): void;
+  /** what it's doing now */
+  state(): State;
   /** is it out (not at home)? */
   out(): boolean;
   busy(): boolean;
@@ -141,8 +146,14 @@ export function createAigent(opts: AigentOptions): Aigent {
   const t0 = performance.now();
   const tick = (_time: number, dtMs: number) => {
     const f = Math.min(3, dtMs / 16.67), dt = Math.min(0.05, dtMs / 1000);
+    // riding along with something the page moves
+    if (o.follow) {
+      const at = o.follow();
+      if (at) gsap.set(anchor, { x: at.x, y: at.y, scale: at.scale });
+      show(!!at);
+    }
     // at home, it rides along with its spot (the page scrolls, the layout moves)
-    if (!S.out && !S.busy) {
+    else if (!S.out && !S.busy) {
       const h = homePt();
       if (h) gsap.set(anchor, { x: h.x, y: h.y, scale: o.homeScale });
       show(!!h);
@@ -161,7 +172,7 @@ export function createAigent(opts: AigentOptions): Aigent {
   gsap.ticker.add(tick);
 
   // it arrives: a little pop at home
-  if (!still()) {
+  if (!still() && !o.follow) {
     const h = homePt();
     if (h) gsap.fromTo(anchor, { scale: 0 }, { scale: o.homeScale, duration: 0.8, delay: 0.4, ease: "back.out(3)" });
   }
@@ -244,6 +255,7 @@ export function createAigent(opts: AigentOptions): Aigent {
       readColors();
     },
     out: () => S.out,
+    state: () => S.state,
     busy: () => S.busy,
     destroy() {
       gsap.ticker.remove(tick);
