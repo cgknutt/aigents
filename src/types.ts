@@ -54,7 +54,7 @@ export type Host = {
   mini: boolean;
 };
 
-export type Flight = { tl: gsap.core.Timeline; dx: number; d: number; quirk: "" | "turn" | "drift" | "blink" };
+export type Flight = { tl: gsap.core.Timeline; dx: number; d: number; quirk: "" | "turn" | "blink" };
 
 export type BodyInstance = {
   /** draw this frame on the canvas (already cleared). return true if anything was drawn */

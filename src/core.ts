@@ -174,12 +174,19 @@ export function createAigent(opts: AigentOptions): Aigent {
   // it arrives: a little pop at home
   if (!still() && !o.follow) {
     const h = homePt();
-    if (h) gsap.fromTo(anchor, { scale: 0 }, { scale: o.homeScale, duration: 0.8, delay: 0.4, ease: "back.out(3)" });
+    // a gentle grow with only a hint of give (debo, 2026-11-14: the overshoots were way too strong)
+    if (h) gsap.fromTo(anchor, { scale: 0, autoAlpha: 0 }, { scale: o.homeScale, autoAlpha: 1, duration: 0.7, delay: 0.4, ease: "back.out(1.2)" });
   }
 
   // ---------- flying ----------
   async function glide(to: Pt, scale: number) {
     S.out = true;
+    // already there: nothing to fly (it would rise and drop back)
+    const here = cur();
+    if (shown && Math.hypot(to.x - here.x, to.y - here.y) < 4) {
+      gsap.to(anchor, { scale, duration: 0.3, ease: "sine.inOut" });
+      return;
+    }
     if (still()) {
       gsap.set(anchor, { x: to.x, y: to.y, scale });
       show(true);
@@ -189,16 +196,19 @@ export function createAigent(opts: AigentOptions): Aigent {
     if (!shown) {
       gsap.set(anchor, { x: to.x, y: to.y, scale: 0 });
       show(true);
-      await gsap.to(anchor, { scale, duration: 0.6, ease: "back.out(2.4)" });
+      await gsap.to(anchor, { scale, duration: 0.6, ease: "back.out(1.2)" });
       return;
     }
     const from = cur();
     const dx = to.x - from.x, dist = Math.hypot(dx, to.y - from.y);
-    const lift = Math.min(110, 30 + dist * 0.18);
+    // a low arc: a high one read as rising past the spot and settling back down on a phone
+    const lift = Math.min(60, 16 + dist * 0.12);
     const mid = { x: (from.x + to.x) / 2 + rand(-40, 40), y: Math.max(30, Math.min(from.y, to.y) - lift) };
-    const r = Math.random(), quirk: Flight["quirk"] = r < 0.34 ? (["turn", "drift", "blink"] as const)[Math.floor(r * 9) % 3]! : "";
+    // now and then a small quirk on the way: a slow half turn, or a blink as it lands. no drift past the spot and
+    // back: that read as an overshoot (debo, 2026-11-14)
+    const r = Math.random(), quirk: Flight["quirk"] = r < 0.3 ? (r < 0.15 ? "turn" : "blink") : "";
     const d = clamp(0.9, 1.6, 0.7 + dist / 900);
-    const path = quirk === "drift" ? [from, mid, { x: to.x + Math.sign(dx || 1) * 14, y: to.y - 6 }] : [from, mid, to];
+    const path = [from, mid, to];
     const along = (pts: Pt[], vars: gsap.TweenVars) => {
       const p = { t: 0 };
       return gsap.to(p, { t: 1, ...vars, onUpdate: () => void gsap.set(anchor, curve(pts, p.t)) });
@@ -207,7 +217,6 @@ export function createAigent(opts: AigentOptions): Aigent {
     tl.add(along(path, { duration: d, ease: "sine.inOut" }), 0).to(anchor, { scale, duration: d, ease: "sine.inOut" }, 0);
     const flight: Flight = { tl, dx, d, quirk };
     body.fly?.(flight);
-    if (quirk === "drift") tl.add(along([path[2]!, to], { duration: 0.55, ease: "sine.inOut" }));
     setState("fly");
     await tl;
     setState(S.thinking ? "think" : "rest");
