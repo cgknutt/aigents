@@ -1,6 +1,6 @@
 {
   "name": "aigents",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "animated bodies for an ai helper: mae, firefly, stardust, orb. they fly to what they explain, think, and land softly.",
   "type": "module",
   "license": "MIT",

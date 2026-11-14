@@ -2,7 +2,10 @@ import { BODY_NAMES, createAigent, filmGrain, mountMark, seventies, type BodyNam
 const $ = (s: string) => document.querySelector<HTMLElement>(s)!;
 const COLORS = ["#b0623f", "#3f8c88", "#4f86b8", "#8a5a8c", "#c49a3a"];
 let ci = 0, body: BodyName = (new URLSearchParams(location.search).get("body") as BodyName) || "mae", still = false, thinking = false;
-const a = createAigent({ body, color: "var(--me)", home: () => $("#home") });
+import { createAir, type Air } from "../src";
+let air: Air | null = null;
+void createAir({ strength: 0.5 }).then((x) => (air = x));
+const a = createAigent({ body, color: "var(--me)", home: () => $("#home"), air: () => air });
 // ?bare=1: only the flying aigent, nothing else moving (for measuring)
 const bare = new URLSearchParams(location.search).has("bare");
 const mark = bare ? { set() {} } : mountMark($("#mark"), { body, color: "var(--me)" });
@@ -50,4 +53,20 @@ const set70 = (on: boolean) => {
 $("#seventies").onclick = () => set70(!un70);
 if (q.has("seventies")) set70(true);
 filmMark();
-Object.assign(window, { aigent: a });
+// the sky the air is in
+const SKIES: Record<string, NonNullable<import("../src").AirOptions["sky"]>> = {
+  "sunny": { beams: 0.9, angle: 62, warm: [1, 0.82, 0.55], wind: [6, 0] },
+  "dusk": { beams: 0.7, angle: 28, warm: [1, 0.6, 0.45], wind: [3, 0] },
+  "cloudy": { beams: 0.12, angle: 70, wind: [10, 1] },
+  "windy": { beams: 0.5, angle: 60, wind: [42, 4] },
+  "rain": { beams: 0, rain: 0.8, wind: [8, 0] },
+  "night": { beams: 0, wind: [2, 0] },
+};
+const skyBar = $("#skies");
+for (const name of Object.keys(SKIES)) {
+  const btn = document.createElement("button");
+  btn.textContent = name;
+  btn.onclick = () => { air?.set({ sky: SKIES[name] }); skyBar.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === btn))); };
+  skyBar.append(btn);
+}
+Object.assign(window, { aigent: a, air: () => air, SKIES });

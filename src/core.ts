@@ -38,6 +38,8 @@ export type AigentOptions = {
   shutter?: boolean | number;
   /** film grain in the body's light, 0 to 1 (about 0.3 reads as film) */
   grain?: number;
+  /** the air it flies through (createAir): it pushes the motes aside and leaves a curling wake */
+  air?: () => import("./air").Air | null;
 };
 
 export type Aigent = {
@@ -308,6 +310,11 @@ export function createAigent(opts: AigentOptions): Aigent {
     };
     drew = body.draw(ctx, k);
     if (drew) ghost = 24;
+    // moving through the air: it pushes the motes aside, a little wider for a bigger body
+    if (o.air && dt > 0) {
+      const vx = dx / dt, vy = dy / dt;
+      if (Math.hypot(vx, vy) > 40) o.air()?.stir(q.x, q.y, vx, vy, 0.8, 50 + 70 * k.scale);
+    }
     // film grain, only in its light: noise laid over what's drawn (source-atop), shifted every frame like film stock
     if (drew && o.grain) {
       const R = 170 * Math.max(0.6, k.scale);
