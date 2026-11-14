@@ -15,10 +15,9 @@ const CSS = `
   background: radial-gradient(circle, color-mix(in oklab, var(--ag-gold) 50%, transparent), transparent 65%); }
 .ag-loose { position: absolute; left: 0; top: 0; width: 8.44px; height: 13.33px; overflow: visible; }
 .ag-mark { position: relative; display: inline-block; vertical-align: middle; }
-.ag-mark > .ag-anchor { width: 100%; height: 100%; }
-.ag-mark > .ag-canvas { inset: auto; left: -75%; top: -75%; width: 250%; height: 250%; pointer-events: none; }
+.ag-mark > .ag-canvas { pointer-events: none; }
+.ag-mark > .ag-canvas.ag-spill { inset: auto; left: -75%; top: -75%; width: 250%; height: 250%; }
 .ag-mark .ag-body svg { filter: drop-shadow(0 0 3px color-mix(in oklab, var(--ag-gold) 70%, transparent)); }
-.ag-mark .ag-halo-wrap { inset: -30%; }
 `;
 
 export function ensureStyle() {
