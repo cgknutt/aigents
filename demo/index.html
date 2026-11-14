@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aigents</title>
+<style>
+:root { color-scheme: light; --canvas:#e9e2d5; --surface:#f4eee3; --ink:#2e2924; --muted:#73695d; --line:#d8cdbc; --chamisa:#b48a2c; --me:#b0623f; }
+:root[data-theme="dark"] { color-scheme: dark; --canvas:#1a1815; --surface:#23201c; --ink:#ece5d8; --muted:#a1968a; --line:#353029; --chamisa:#dcb352; --me:#d9906f; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--canvas); color:var(--ink); font:15px/1.5 system-ui, sans-serif; }
+main { max-width: 880px; margin: 0 auto; padding: 28px 18px 60px; display:grid; gap:16px; }
+h1 { font: 400 28px Georgia, serif; margin: 0; }
+.muted { color: var(--muted); }
+.bar { display:flex; flex-wrap:wrap; gap:8px; }
+button { font:inherit; color:inherit; border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:6px 14px; cursor:pointer; }
+button[aria-pressed="true"] { border-color: var(--me); color: var(--me); }
+.card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+.ask { display:flex; align-items:center; gap:10px; border-radius:999px; }
+.spark { width:26px; height:26px; flex:none; }
+.grid { display:grid; gap:14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.chat { display:flex; gap:10px; align-items:center; }
+.mark { width:22px; height:22px; }
+.picks { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; }
+.pick { display:grid; justify-items:center; gap:6px; padding:18px 8px 10px; border-radius:14px; }
+.pick .m { width:44px; height:44px; }
+</style></head><body>
+<main>
+  <h1>aigents</h1>
+  <p class="muted">mae, firefly, stardust, orb. pick one, then tour, think, or done.</p>
+  <div class="bar" id="bodies"></div>
+  <div class="bar"><button id="tour">tour</button><button id="think">think</button><button id="done">done</button><button id="hop">hop</button><button id="still">hold still</button><button id="theme">dark</button><button id="color">change color</button></div>
+  <div class="card ask"><span class="spark" id="home"></span><span class="muted">ask about the bed hold…</span></div>
+  <div class="grid">
+    <div class="card" id="a"><b>to do</b><p class="muted">bank statements, 5 years · medicare card copy · power of attorney</p></div>
+    <div class="card" id="b"><b>questions for the lawyer</b><p class="muted">is the personal guarantee something we sign?</p></div>
+    <div class="card" id="c"><b>next</b><p class="muted">meeting with yd in 2 days, 3 pm</p></div>
+  </div>
+  <div class="card chat"><span class="mark" id="mark"></span><span class="muted">thinking…</span></div>
+  <div class="picks" id="picks"></div>
+</main>
+<script type="module" src="./dist/demo.js"></script>
+</body></html>

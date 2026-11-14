@@ -1,0 +1,4 @@
+node_modules
+demo/dist
+film/out
+.DS_Store

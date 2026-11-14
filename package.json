@@ -1,0 +1,15 @@
+{
+  "name": "aigents",
+  "version": "0.1.0",
+  "description": "animated bodies for an ai helper: mae, firefly, stardust, orb. they fly to what they explain, think, and land softly.",
+  "type": "module",
+  "license": "MIT",
+  "exports": { ".": "./src/index.ts" },
+  "files": ["src", "README.md"],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "demo": "bun build demo/demo.ts --outdir demo/dist --target browser && bun demo/serve.ts"
+  },
+  "peerDependencies": { "gsap": "^3.12.5" },
+  "devDependencies": { "gsap": "3.12.5", "typescript": "5.9.3", "@types/bun": "1.3.1" }
+}
