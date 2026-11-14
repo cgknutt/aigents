@@ -84,14 +84,23 @@ export function mountMark(el: HTMLElement, opts: MarkOptions): Mark {
   const P = { x: -1, y: -1, vx: 0, vy: 0 };
   const t0 = performance.now();
   let since = performance.now();
+  // off the screen (scrolled away, a closed panel): nothing at all. resting in the middle: a few frames a second
+  let visible = true, wait = 0;
+  const io = typeof IntersectionObserver === "function" ? new IntersectionObserver((e) => void (visible = e.some((x) => x.isIntersecting))) : null;
+  io?.observe(el);
   const tick = (_t: number, dtMs: number) => {
-    if (!el.isConnected) return;
+    if (!el.isConnected || !visible) return;
+    wait += dtMs;
+    const settled = !want && Math.hypot(P.vx, P.vy) < 1;
+    if (o.state === "rest" && settled && wait < 1000 / 12) return;
+    dtMs = wait;
+    wait = 0;
     const still = !!o.still || reducedMotion();
     const bw = el.clientWidth, bh = el.clientHeight;
     const scale = o.scale ?? Math.min(bw, bh) / 44;
     const home = { x: bw / 2, y: bh / 2 };
     const to = want ?? home;
-    const dt = Math.min(0.05, dtMs / 1000), f = Math.min(3, dtMs / 16.67);
+    const dt = Math.min(0.1, dtMs / 1000), f = Math.min(6, dtMs / 16.67);
     if (P.x < 0 || still) {
       P.x = to.x;
       P.y = to.y;
@@ -133,6 +142,7 @@ export function mountMark(el: HTMLElement, opts: MarkOptions): Mark {
       gsap.ticker.remove(tick);
       clearInterval(colorTimer);
       ro.disconnect();
+      io?.disconnect();
       body.destroy();
       anchor.remove();
       canvas.remove();

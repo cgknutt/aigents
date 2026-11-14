@@ -86,14 +86,22 @@ export function createAigent(opts: AigentOptions): Aigent {
   gsap.set(anchor, { xPercent: -50, yPercent: -50, x: -200, y: -200, scale: o.homeScale });
 
   // ---------- size and colors ----------
-  let W = 0, H = 0;
+  // the canvas: the whole screen while it's out (flying, trails), or a small square round it while it rests at home.
+  // resting, it also draws only a few times a second (debo, 2026-11-14: a full-screen canvas at 60 frames a second
+  // was steady work for nothing, and on an ipad that's battery and warmth).
+  const SMALL = 240, REST_FPS = 12;
+  let W = 0, H = 0, dpr = 1;
+  let small: { left: number; top: number } | null = null;
   const size = () => {
-    const dpr = Math.min(2, devicePixelRatio || 1);
+    dpr = Math.min(2, devicePixelRatio || 1);
     W = innerWidth;
     H = innerHeight;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const w = small ? SMALL : W, h = small ? SMALL : H;
+    Object.assign(canvas.style, small ? { inset: "auto", left: `${small.left}px`, top: `${small.top}px`, width: `${SMALL}px`, height: `${SMALL}px` } : { inset: "0", left: "", top: "", width: "100%", height: "100%" });
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    // the body always draws in page coordinates: a small canvas shifts them
+    ctx.setTransform(dpr, 0, 0, dpr, small ? -small.left * dpr : 0, small ? -small.top * dpr : 0);
   };
   size();
   addEventListener("resize", size);
@@ -142,10 +150,9 @@ export function createAigent(opts: AigentOptions): Aigent {
   show(false);
 
   // ---------- every frame ----------
-  let last = cur(), drew = false;
+  let last = cur(), drew = false, wait = 0, quiet = 0;
   const t0 = performance.now();
   const tick = (_time: number, dtMs: number) => {
-    const f = Math.min(3, dtMs / 16.67), dt = Math.min(0.05, dtMs / 1000);
     // riding along with something the page moves
     if (o.follow) {
       const at = o.follow();
@@ -158,11 +165,32 @@ export function createAigent(opts: AigentOptions): Aigent {
       if (h) gsap.set(anchor, { x: h.x, y: h.y, scale: o.homeScale });
       show(!!h);
     }
-    const q = cur(), dx = q.x - last.x, dy = q.y - last.y;
+    const q = cur(), moved = Math.hypot(q.x - last.x, q.y - last.y);
+    // resting: at home (or still, riding along), not thinking, not moving for a moment
+    quiet = moved < 0.3 && !S.busy && !S.out && S.state === "rest" ? quiet + dtMs : 0;
+    const resting = quiet > 600;
+    // resting, a few frames a second is plenty; and nothing at all while it's off the screen
+    wait += dtMs;
+    if (resting && wait < 1000 / REST_FPS) return;
+    const offscreen = q.x < -80 || q.y < -80 || q.x > innerWidth + 80 || q.y > innerHeight + 80;
+    const f = Math.min(6, wait / 16.67), dt = Math.min(0.1, wait / 1000);
+    wait = 0;
+    const dx = q.x - last.x, dy = q.y - last.y;
     last = q;
-    if (drew) ctx.clearRect(0, 0, W, H);
+    // small canvas at rest (not when riding along: the page moves it, and its trail goes everywhere)
+    const wantSmall = resting && !o.follow;
+    if (wantSmall && (!small || Math.abs(small.left + SMALL / 2 - q.x) > 30 || Math.abs(small.top + SMALL / 2 - q.y) > 30)) {
+      small = { left: Math.round(q.x - SMALL / 2), top: Math.round(q.y - SMALL / 2) };
+      size();
+      drew = false;
+    } else if (!wantSmall && small) {
+      small = null;
+      size();
+      drew = false;
+    }
+    if (drew) small ? ctx.clearRect(small.left, small.top, SMALL, SMALL) : ctx.clearRect(0, 0, W, H);
     drew = false;
-    if (!shown) return;
+    if (!shown || (offscreen && !S.out)) return;
     const k: Tick = {
       x: q.x, y: q.y, dx, dy, scale: Number(gsap.getProperty(anchor, "scale")), state: S.state, st: (performance.now() - S.since) / 1000,
       dt, f, t: (performance.now() - t0) / 1000, look, still: still(), W, H,
