@@ -6,6 +6,7 @@
 //
 //   mountMark(span, { body: "firefly", color: "#4f86b8" })   // a small one that thinks in place
 export { createAigent, beside, type Aigent, type AigentOptions } from "./core";
+export { filmGrain, type GrainOptions } from "./grain";
 export { mountMark, type Mark, type MarkOptions } from "./mark";
 export { BODIES, BODY_NAMES, isBodyName, type BodyName } from "./bodies";
 export type { BodyDef, BodyInstance, Host, Look, Pt, State, Tick } from "./types";

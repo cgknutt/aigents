@@ -37,7 +37,7 @@ export const mae: BodyDef = {
     gsap.set(petalEls, { transformOrigin: "50% 100%" });
 
     const knobs = knobsFor(CRAZY), kinds = KINDS;
-    const S = { spin: 0.25, rot: 0 };
+    const S = { spin: 0.25, rot: 0, lean: 0 };
     const timers = new Set<number>();
     const later = (fn: () => void, ms: number) => {
       const id = window.setTimeout(() => (timers.delete(id), fn()), ms);
@@ -51,12 +51,11 @@ export const mae: BodyDef = {
       // each petal sways a little, out of step with the others, hinged at its base
       ...petalEls.map((el) => gsap.fromTo(el, { rotation: -rand(3, 7) }, { rotation: rand(3, 7), duration: rand(1.4, 2.4), ease: "sine.inOut", yoyo: true, repeat: -1, delay: -rand(0, 2) })),
     ];
+    // her sway and breathing don't run on their own timers: she moves them along each time she's drawn, so at rest
+    // (a few times a second) they cost a few updates a second, not 60
+    for (const t of idle) t.pause();
     let stillNow = false;
-    const holdStill = (still: boolean) => {
-      if (still === stillNow) return;
-      stillNow = still;
-      for (const t of idle) still ? t.pause() : t.play();
-    };
+    const holdStill = (still: boolean) => void (stillNow = still);
     // a slow, soft blink you can actually see: she squints shut, holds a beat, opens, and her petals ripple round
     const blink = () => {
       gsap.timeline().to(center, { scaleY: 0.12, duration: 0.16, ease: "sine.in" }).to(center, { scaleY: 1, duration: 0.22, ease: "sine.out" }, "+=0.12");
@@ -204,11 +203,17 @@ export const mae: BodyDef = {
       draw(ctx, k) {
         last = k;
         holdStill(k.still);
+        if (!k.still) for (const t of idle) t.totalTime(t.totalTime() + k.dt);
         // her petals turn slowly, faster while she thinks (in daisy: while claude works)
         const target = k.still ? 0 : k.state === "think" ? 1.6 : 0.25;
         S.spin += (target - S.spin) * 0.03 * k.f;
         S.rot += S.spin * k.f;
         gsap.set(petals, { rotation: S.rot, svgOrigin: "0 0" });
+        // she leans into the way the current carries her, and eases upright as it slows
+        if (!k.still) {
+          S.lean += (Math.max(-12, Math.min(12, k.dx * 1.4)) - S.lean) * Math.min(1, 0.12 * k.f);
+          gsap.set(body, { rotation: S.lean });
+        }
         if (mini) return false;
         const v = Math.hypot(k.dx, k.dy);
         if (v > 3.5 && !k.still) emit(k.x, k.y, Math.round(Math.min(5, v / 5) * mix(0.3, 1.6, CRAZY)), k.dx, k.dy);

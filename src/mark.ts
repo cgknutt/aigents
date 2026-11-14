@@ -82,6 +82,7 @@ export function mountMark(el: HTMLElement, opts: MarkOptions): Mark {
   // where it is in the box, on a soft spring toward where it's wanted
   let want: Pt | null = null;
   const P = { x: -1, y: -1, vx: 0, vy: 0 };
+  const seed = Math.random() * 10;
   const t0 = performance.now();
   let since = performance.now();
   // off the screen (scrolled away, a closed panel): nothing at all. resting in the middle: a few frames a second
@@ -92,14 +93,22 @@ export function mountMark(el: HTMLElement, opts: MarkOptions): Mark {
     if (!el.isConnected || !visible) return;
     wait += dtMs;
     const settled = !want && Math.hypot(P.vx, P.vy) < 1;
+    // resting in its middle: 12 frames a second. thinking in place: 30, the same to the eye at that pace, half the
+    // work. following a pointer: the screen's own rate, so it never lags your hand
     if (o.state === "rest" && settled && wait < 1000 / 12) return;
+    if (!want && wait < 1000 / 30) return;
     dtMs = wait;
     wait = 0;
     const still = !!o.still || reducedMotion();
     const bw = el.clientWidth, bh = el.clientHeight;
     const scale = o.scale ?? Math.min(bw, bh) / 44;
     const home = { x: bw / 2, y: bh / 2 };
-    const to = want ?? home;
+    // the point it's drawn to, stirred by a slow current, so it floats after your pointer instead of tracking it
+    const tt = (performance.now() - t0) / 1000;
+    // only while it's awake: a resting mark holds still, so it can draw a few times a second
+    const c = still || (o.state === "rest" && !want) ? { x: 0, y: 0 } : { x: Math.sin(tt * 0.9 + seed) + Math.sin(tt * 0.53 + seed * 2), y: Math.cos(tt * 0.77 + seed) + Math.cos(tt * 0.41 - seed) };
+    const base = want ?? home;
+    const to = { x: base.x + c.x * (want ? 3 : 2), y: base.y + c.y * (want ? 3 : 2) };
     const dt = Math.min(0.1, dtMs / 1000), f = Math.min(6, dtMs / 16.67);
     if (P.x < 0 || still) {
       P.x = to.x;
@@ -109,7 +118,8 @@ export function mountMark(el: HTMLElement, opts: MarkOptions): Mark {
     const lx = P.x, ly = P.y;
     if (!still) {
       // a calm spring: it eases after the point, a little behind, with no bounce
-      const k = 60, d = 2 * 0.95 * Math.sqrt(k);
+      // softer and a little loose, like something in water: it trails the point and curls in
+      const k = 34, d = 2 * 0.72 * Math.sqrt(k);
       P.vx += ((to.x - P.x) * k - P.vx * d) * dt;
       P.vy += ((to.y - P.y) * k - P.vy * d) * dt;
       P.x += P.vx * dt;
