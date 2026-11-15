@@ -38,6 +38,8 @@ export type AigentOptions = {
   shutter?: boolean | number;
   /** film grain in the body's light, 0 to 1 (about 0.3 reads as film) */
   grain?: number;
+  /** how see-through the whole body is, 0 to 1 (a background dancer is faint). default 1 */
+  opacity?: number;
   /** tap or click it and it giggles (debo, 2026-11-14). default on, off when riding along (follow): there the page
    *  owns the taps. only the body itself takes the tap, never the layer, so it never covers a button */
   tap?: boolean;
@@ -117,6 +119,7 @@ export function createAigent(opts: AigentOptions): Aigent {
   layer.className = "ag-layer";
   layer.setAttribute("aria-hidden", "true");
   layer.style.zIndex = String(opts.zIndex ?? 60);
+  if (opts.opacity !== undefined) layer.style.opacity = String(opts.opacity);
   const canvas = document.createElement("canvas");
   canvas.className = "ag-canvas";
   const anchor = document.createElement("div");
