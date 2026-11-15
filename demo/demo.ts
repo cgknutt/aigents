@@ -1,4 +1,4 @@
-import { BODY_NAMES, createAigent, filmGrain, mountMark, seventies, type BodyName } from "../src";
+import { BODY_NAMES, createAigent, filmGrain, mountMark, seventies, startDance, type BodyName } from "../src";
 const $ = (s: string) => document.querySelector<HTMLElement>(s)!;
 const COLORS = ["#b0623f", "#3f8c88", "#4f86b8", "#8a5a8c", "#c49a3a"];
 let ci = 0, body: BodyName = (new URLSearchParams(location.search).get("body") as BodyName) || "mae", still = false, thinking = false;
@@ -69,4 +69,10 @@ for (const name of Object.keys(SKIES)) {
   btn.onclick = () => { air?.set({ sky: SKIES[name] }); skyBar.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === btn))); };
   skyBar.append(btn);
 }
+// the sign-in look: the four bodies drifting faintly in the background
+let stopDance: (() => void) | null = null;
+$("#dance").onclick = () => {
+  if (stopDance) { stopDance(); stopDance = null; } else stopDance = startDance({ color: "var(--me)", air: () => air });
+  $("#dance").setAttribute("aria-pressed", String(!!stopDance));
+};
 Object.assign(window, { aigent: a, air: () => air, SKIES });
