@@ -62,6 +62,8 @@ export type Aigent = {
   set(o: Partial<Omit<AigentOptions, "zIndex">>): void;
   /** what it's doing now */
   state(): State;
+  /** where it is now, on the screen */
+  where(): Pt;
   /** is it out (not at home)? */
   out(): boolean;
   busy(): boolean;
@@ -479,6 +481,7 @@ export function createAigent(opts: AigentOptions): Aigent {
       readColors();
     },
     out: () => S.out,
+    where: () => cur(),
     state: () => S.state,
     busy: () => S.busy,
     destroy() {

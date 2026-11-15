@@ -52,8 +52,22 @@ export function startDance(o: DanceOptions = {}): () => void {
       a.think(false);
     }
   });
+  // your pointer coming close: that one drifts away, unhurried, like a firefly would (the air's already stirring)
+  const shy = new WeakSet<Aigent>();
+  const onPointer = (e: PointerEvent) => {
+    for (const a of dancers) {
+      const w = a.where();
+      if (shy.has(a) || Math.hypot(w.x - e.clientX, w.y - e.clientY) > 110) continue;
+      shy.add(a);
+      const away = Math.atan2(w.y - e.clientY, w.x - e.clientX), d = rand(140, 220);
+      const to = { x: Math.max(30, Math.min(innerWidth - 30, w.x + Math.cos(away) * d)), y: Math.max(30, Math.min(innerHeight - 30, w.y + Math.sin(away) * d)) };
+      void a.flyTo(to).then(() => setTimeout(() => shy.delete(a), 1500));
+    }
+  };
+  addEventListener("pointermove", onPointer, { passive: true });
   return () => {
     alive = false;
+    removeEventListener("pointermove", onPointer);
     dancers.forEach((a) => a.destroy());
   };
 }
