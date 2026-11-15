@@ -4,7 +4,9 @@
 const CSS = `
 .ag-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
 .ag-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.ag-anchor { position: absolute; left: 0; top: 0; width: 44px; height: 44px; will-change: transform; }
+.ag-anchor { position: absolute; left: 0; top: 0; width: 44px; height: 44px; will-change: transform; -webkit-tap-highlight-color: transparent; }
+/* a small body is still easy to tap: the tap area reaches a little past it */
+.ag-layer .ag-anchor::before { content: ""; position: absolute; inset: -14px; border-radius: 50%; }
 .ag-squash, .ag-body { position: absolute; inset: 0; display: block; }
 .ag-body svg { width: 100%; height: 100%; overflow: visible; display: block;
   filter: drop-shadow(0 0 7.4px color-mix(in oklab, var(--ag-gold) 75%, transparent)); }

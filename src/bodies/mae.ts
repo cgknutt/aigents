@@ -257,6 +257,19 @@ export const mae: BodyDef = {
           .to(squash, { rotation: "+=360", duration: 0.6, ease: "power2.inOut" }, "<")
           .to(anchor, { y: "+=14", duration: 0.5, ease: "bounce.out" });
       },
+      // tapped: she squishes, her petals shiver, she spins once and blinks, and sparks fall off her
+      async giggle() {
+        burst(16);
+        gsap.timeline()
+          .to(petalEls, { rotation: "+=16", duration: 0.07, stagger: 0.02, ease: "sine.inOut" })
+          .to(petalEls, { rotation: "-=28", duration: 0.09, stagger: 0.02, ease: "sine.inOut" })
+          .to(petalEls, { rotation: "+=12", duration: 0.12, stagger: 0.02, ease: "sine.out" });
+        blink();
+        await gsap.timeline()
+          .to(squash, { scaleX: 1.25, scaleY: 0.78, duration: 0.1, ease: "power2.out" })
+          .to(squash, { scaleX: 0.9, scaleY: 1.12, duration: 0.12, ease: "sine.inOut" })
+          .to(squash, { scaleX: 1, scaleY: 1, rotation: "+=360", duration: 0.55, ease: "power2.inOut" });
+      },
       hop() {
         gsap.timeline().to(anchor, { y: "-=6", duration: 0.22, ease: "power2.out" }).to(anchor, { y: "+=6", duration: 0.45, ease: "bounce.out" });
       },

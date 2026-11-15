@@ -67,6 +67,8 @@ export type BodyInstance = {
   happy?(k: Tick): Promise<void> | void;
   /** a small hop */
   hop?(): void;
+  /** someone tapped it: a giggle of its own (it also gets a moment of its 'done' look) */
+  giggle?(): Promise<void> | void;
   destroy(): void;
 };
 

@@ -38,6 +38,9 @@ export type AigentOptions = {
   shutter?: boolean | number;
   /** film grain in the body's light, 0 to 1 (about 0.3 reads as film) */
   grain?: number;
+  /** tap or click it and it giggles (debo, 2026-11-14). default on, off when riding along (follow): there the page
+   *  owns the taps. only the body itself takes the tap, never the layer, so it never covers a button */
+  tap?: boolean;
   /** the air it flies through (createAir): it pushes the motes aside and leaves a curling wake */
   air?: () => import("./air").Air | null;
 };
@@ -52,6 +55,8 @@ export type Aigent = {
   /** a happy moment: something's done */
   done(): Promise<void>;
   hop(): void;
+  /** a giggle, as if tapped */
+  giggle(): Promise<void>;
   set(o: Partial<Omit<AigentOptions, "zIndex">>): void;
   /** what it's doing now */
   state(): State;
@@ -163,7 +168,7 @@ export function createAigent(opts: AigentOptions): Aigent {
   let body: BodyInstance = BODIES[o.body].create({ anchor, layer, mini: false });
   let bodyName = o.body;
 
-  const S = { busy: false, out: false, thinking: false, state: "rest" as State, since: performance.now() };
+  const S = { busy: false, out: false, thinking: false, state: "rest" as State, since: performance.now(), giggling: false };
   const setState = (s: State) => {
     if (S.state !== s) (S.state = s), (S.since = performance.now());
   };
@@ -343,6 +348,45 @@ export function createAigent(opts: AigentOptions): Aigent {
   };
   gsap.ticker.add(tick);
 
+  // ---------- a giggle ----------
+  // tapped: a wiggle and a squish of the whole body, a moment of its own 'done' look (firefly's flash, stardust's
+  // bloom, orb's rays), mae's petals shiver; and the air puffs out round it
+  async function giggle() {
+    if (S.giggling || still()) return;
+    S.giggling = true;
+    const q = cur();
+    const air = o.air?.();
+    if (air) for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      air.stir(q.x + Math.cos(a) * 6, q.y + Math.sin(a) * 6, Math.cos(a) * 260, Math.sin(a) * 260, 0.9, 40);
+    }
+    const was = S.state;
+    if (was !== "fly") setState("done");
+    gsap.timeline()
+      .to(anchor, { rotation: -14, duration: 0.08, ease: "sine.out" })
+      .to(anchor, { rotation: 12, duration: 0.1, ease: "sine.inOut" })
+      .to(anchor, { rotation: -8, duration: 0.1, ease: "sine.inOut" })
+      .to(anchor, { rotation: 5, duration: 0.1, ease: "sine.inOut" })
+      .to(anchor, { rotation: 0, duration: 0.18, ease: "sine.out" });
+    await body.giggle?.();
+    await new Promise((r) => setTimeout(r, 700));
+    if (S.state === "done") setState(S.thinking ? "think" : "rest");
+    S.giggling = false;
+  }
+  const tappable = () => (o.tap ?? !o.follow) && shown;
+  const onTap = (e: Event) => {
+    e.stopPropagation();
+    e.preventDefault();
+    void giggle();
+  };
+  anchor.addEventListener("click", onTap);
+  const syncTap = () => {
+    anchor.style.pointerEvents = tappable() ? "auto" : "none";
+    anchor.style.cursor = tappable() ? "pointer" : "";
+  };
+  const tapTimer = setInterval(syncTap, 500);
+  syncTap();
+
   // it arrives: a little pop at home
   if (!still() && !o.follow) {
     const h = homePt();
@@ -421,6 +465,7 @@ export function createAigent(opts: AigentOptions): Aigent {
         setState(S.thinking ? "think" : "rest");
       }),
     hop: () => void (!still() && !S.busy && body.hop?.()),
+    giggle,
     set(n) {
       o = { ...o, ...n };
       if (n.body && n.body !== bodyName) {
@@ -436,6 +481,8 @@ export function createAigent(opts: AigentOptions): Aigent {
     destroy() {
       gsap.ticker.remove(tick);
       clearInterval(colorTimer);
+      clearInterval(tapTimer);
+      anchor.removeEventListener("click", onTap);
       removeEventListener("resize", size);
       removeEventListener("scroll", moved, { capture: true });
       removeEventListener("resize", moved);
