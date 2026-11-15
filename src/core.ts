@@ -8,6 +8,7 @@ import gsap from "gsap";
 import { BODIES, type BodyName } from "./bodies";
 import { isLight, resolve } from "./color";
 import { ensureStyle } from "./style";
+import { onThemeChange } from "./theme";
 import type { BodyInstance, Look, Pt, State, Tick } from "./types";
 
 export type AigentOptions = {
@@ -38,6 +39,9 @@ export type AigentOptions = {
   shutter?: boolean | number;
   /** film grain in the body's light, 0 to 1 (about 0.3 reads as film) */
   grain?: number;
+  /** keep the canvas a small square that travels with the body, always (a background dancer): about a tenth of a
+   *  full-screen canvas's memory. long trails get trimmed at its edge */
+  compact?: boolean;
   /** how see-through the whole body is, 0 to 1 (a background dancer is faint). default 1 */
   opacity?: number;
   /** tap or click it and it giggles (debo, 2026-11-14). default on, off when riding along (follow): there the page
@@ -122,6 +126,10 @@ export function createAigent(opts: AigentOptions): Aigent {
   layer.setAttribute("aria-hidden", "true");
   layer.style.zIndex = String(opts.zIndex ?? 60);
   if (opts.opacity !== undefined) layer.style.opacity = String(opts.opacity);
+  // a page change (a view transition) photographs the page; the body sits out of it and shows again right after,
+  // so it never lingers in the picture of a page it has already left
+  layer.style.setProperty("view-transition-name", `ag-${Math.random().toString(36).slice(2, 9)}`);
+  layer.style.setProperty("view-transition-class", "ag");
   const canvas = document.createElement("canvas");
   canvas.className = "ag-canvas";
   const anchor = document.createElement("div");
@@ -144,10 +152,15 @@ export function createAigent(opts: AigentOptions): Aigent {
     W = innerWidth;
     H = innerHeight;
     const w = small ? SMALL : W, h = small ? SMALL : H;
-    Object.assign(canvas.style, small ? { inset: "auto", left: `${small.left}px`, top: `${small.top}px`, width: `${SMALL}px`, height: `${SMALL}px` } : { inset: "0", left: "", top: "", width: "100%", height: "100%" });
+    Object.assign(canvas.style, small ? { inset: "auto", left: "0", top: "0", width: `${SMALL}px`, height: `${SMALL}px` } : { inset: "0", left: "", top: "", width: "100%", height: "100%", transform: "" });
     canvas.width = w * dpr;
     canvas.height = h * dpr;
-    // the body always draws in page coordinates: a small canvas shifts them
+    place();
+  };
+  // move a small canvas without making a new one: just where it sits, and the shift for drawing in page coordinates
+  const place = () => {
+    // moved with a transform, which the graphics chip handles: no layout work for the page
+    if (small) canvas.style.transform = `translate(${small.left}px, ${small.top}px)`;
     ctx.setTransform(dpr, 0, 0, dpr, small ? -small.left * dpr : 0, small ? -small.top * dpr : 0);
   };
   size();
@@ -160,7 +173,7 @@ export function createAigent(opts: AigentOptions): Aigent {
     layer.style.setProperty("--ag-gold", look.gold);
   };
   readColors();
-  const colorTimer = setInterval(readColors, 2000);
+  const offTheme = onThemeChange(readColors);
 
   // ---------- motion ----------
   const mq = typeof matchMedia === "function" ? matchMedia("(prefers-reduced-motion: reduce)") : null;
@@ -299,10 +312,12 @@ export function createAigent(opts: AigentOptions): Aigent {
     const dx = q.x - last.x, dy = q.y - last.y;
     last = q;
     // small canvas at rest (not when riding along: the page moves it, and its trail goes everywhere)
-    const wantSmall = resting && !o.follow;
+    const wantSmall = (resting && !o.follow) || !!o.compact;
     if (wantSmall && (!small || Math.abs(small.left + SMALL / 2 - q.x) > 30 || Math.abs(small.top + SMALL / 2 - q.y) > 30)) {
+      const first = !small;
+      if (!first) ctx.clearRect(small!.left, small!.top, SMALL, SMALL);
       small = { left: Math.round(q.x - SMALL / 2), top: Math.round(q.y - SMALL / 2) };
-      size();
+      first ? size() : place();
       drew = false;
     } else if (!wantSmall && small) {
       small = null;
@@ -486,7 +501,7 @@ export function createAigent(opts: AigentOptions): Aigent {
     busy: () => S.busy,
     destroy() {
       gsap.ticker.remove(tick);
-      clearInterval(colorTimer);
+      offTheme();
       clearInterval(tapTimer);
       anchor.removeEventListener("click", onTap);
       removeEventListener("resize", size);

@@ -39,7 +39,7 @@ export function startDance(o: DanceOptions = {}): () => void {
     return { x: innerWidth * 0.1, y: innerHeight * 0.15 };
   };
   const dancers: Aigent[] = bodies.map((body) => {
-    return createAigent({ body, color: o.color, zIndex: o.zIndex ?? 0, fps: 24, air: o.air, flyScale: rand(0.38, 0.5), opacity: o.opacity ?? 0.55 });
+    return createAigent({ body, color: o.color, zIndex: o.zIndex ?? 0, fps: 24, compact: true, air: o.air, flyScale: rand(0.38, 0.5), opacity: o.opacity ?? 0.55 });
   });
   // each takes its own unhurried path: fly somewhere, linger and drift there a while, fly on
   dancers.forEach(async (a, i) => {

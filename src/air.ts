@@ -9,6 +9,7 @@
 // - nothing while the page is hidden. no webgpu, or reduced motion: no air (createAir gives null), and the page
 //   looks exactly as it did before.
 import { isLight, resolve } from "./color";
+import { onThemeChange } from "./theme";
 
 export type AirOptions = {
   /** where the canvas goes (default: the page body). it's fixed to the screen, behind the page (z -1), and never
@@ -236,7 +237,10 @@ export async function createAir(opts: AirOptions = {}): Promise<Air | null> {
     rgb = [parseInt(c.slice(1, 3), 16) / 255, parseInt(c.slice(3, 5), 16) / 255, parseInt(c.slice(5, 7), 16) / 255];
   };
   readColor();
-  const colorTimer = setInterval(readColor, 3000);
+  const offTheme = onThemeChange(() => {
+    readColor();
+    wake();
+  });
 
   // what's stirring it: recent pushes, fading over a moment
   type Stir = { x: number; y: number; vx: number; vy: number; power: number; radius: number; t: number };
@@ -261,7 +265,8 @@ export async function createAir(opts: AirOptions = {}): Promise<Air | null> {
     uf.set([rgb[0], rgb[1], rgb[2], 1], 4);
     uf[8] = 16 * (1 - calm * 0.6);
     uf[9] = o.band ?? 1;
-    uf[10] = (o.strength ?? 0.5) * (dark ? 0.75 : 0.6);
+    // a light page needs a little more to be felt at all (debo: 'too shy' on light); dark stays as it was
+    uf[10] = (o.strength ?? 0.5) * (dark ? 0.75 : 0.85);
     uf[11] = dark ? 1 : 0;
     uu[12] = count;
     uu[13] = live.length;
@@ -324,7 +329,7 @@ export async function createAir(opts: AirOptions = {}): Promise<Air | null> {
     },
     destroy() {
       cancelAnimationFrame(raf);
-      clearInterval(colorTimer);
+      offTheme();
       removeEventListener("pointermove", onPointer);
       removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisible);

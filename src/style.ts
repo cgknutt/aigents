@@ -16,6 +16,7 @@ const CSS = `
 .ag-halo { position: absolute; inset: 0; border-radius: 50%; opacity: 0.45;
   background: radial-gradient(circle, color-mix(in oklab, var(--ag-gold) 50%, transparent), transparent 65%); }
 .ag-loose { position: absolute; left: 0; top: 0; width: 8.44px; height: 13.33px; overflow: visible; }
+::view-transition-old(.ag), ::view-transition-new(.ag) { animation: none; opacity: 0; }
 .ag-mark { position: relative; display: inline-block; vertical-align: middle; }
 .ag-mark > .ag-canvas { pointer-events: none; }
 .ag-mark > .ag-canvas.ag-spill { inset: auto; left: -75%; top: -75%; width: 250%; height: 250%; }

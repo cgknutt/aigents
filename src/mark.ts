@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { BODIES, type BodyName } from "./bodies";
 import { isLight, resolve } from "./color";
 import { ensureStyle } from "./style";
+import { onThemeChange } from "./theme";
 import type { BodyInstance, Look, Pt, State } from "./types";
 
 export type MarkOptions = {
@@ -68,7 +69,7 @@ export function mountMark(el: HTMLElement, opts: MarkOptions): Mark {
     el.style.setProperty("--ag-gold", look.gold);
   };
   readColors();
-  const colorTimer = setInterval(readColors, 2000);
+  const offTheme = onThemeChange(readColors);
   const make = () => BODIES[o.body].create({ anchor, layer: null, mini: true });
   let body: BodyInstance = make();
   // a canvas body draws itself on the canvas; mae is her flower in the anchor
@@ -150,7 +151,7 @@ export function mountMark(el: HTMLElement, opts: MarkOptions): Mark {
     },
     destroy() {
       gsap.ticker.remove(tick);
-      clearInterval(colorTimer);
+      offTheme();
       ro.disconnect();
       io?.disconnect();
       body.destroy();
